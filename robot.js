@@ -21,15 +21,15 @@ const userAgents = [
 
 (async () => {
     const browser = await chromium.launch({ headless: false }); 
-    const baseUrl = 'https://www.property24.com/estate-agents/eazi-real-estate/30100';
+    const baseUrl = 'https://www.property24.com/estate-agents/re-max-legacy-potchefstroom/12181'; //url here
     const uniqueProfileUrls = new Set();  
     const agents = [];
 
     // Initial page visit to get profile URLs
     const context1 = await browser.newContext({ userAgent: getRandomUserAgent() });
     const page1 = await context1.newPage();
-    await page1.goto(baseUrl);
-    await page1.waitForSelector('.col-4.p24_agencyCard');
+    await page1.goto(baseUrl, { timeout: 60000 }); // 60 seconds
+    await page1.waitForSelector('.col-4.p24_agencyCard', { timeout: 60000 }); // 60 seconds
     
     const initialProfileUrls = await page1.$$eval('.col-4.p24_agencyCard a', links => links.map(link => link.href));
     for (const url of initialProfileUrls) uniqueProfileUrls.add(url);
@@ -40,7 +40,7 @@ const userAgents = [
     for (const profileUrl of uniqueProfileUrls) {
         const context = await browser.newContext({ userAgent: getRandomUserAgent() });
         const page = await context.newPage();
-        await page.goto(profileUrl);
+        await page.goto(profileUrl, { timeout: 60000 });
         await page.waitForTimeout(Math.random() * 1000 + 500); 
 
         try {
@@ -56,7 +56,10 @@ const userAgents = [
             const name = nameMatch ? nameMatch[1].trim() : 'Name not found';
             const contactNumbers = contactInfo.split('Tel:').slice(1).map(n => n.trim());
 
-            agents.push({ name, profileUrl, contactNumbers: contactNumbers.join(', ') });
+            const contactNumber1 = contactNumbers[0] || '';
+            const contactNumber2 = contactNumbers[1] || '';
+
+            agents.push({ name, profileUrl, contactNumber1, contactNumber2 });
         } catch (e) {
             console.error(`Failed to fetch details for ${profileUrl}: ${e.message}`);
             // Add error handling logic here if needed (e.g., retry, log to file)
@@ -68,11 +71,12 @@ const userAgents = [
 
     // Save the scraped data to a CSV file
     const csvWriter = createCsvWriter({
-        path: 'agents_eazi.csv',
+        path: 're-max-legacy-potchefstroom.csv', //file name here
         header: [
             { id: 'name', title: 'Name' },
             { id: 'profileUrl', title: 'Profile URL' },
-            { id: 'contactNumbers', title: 'Contact Numbers' }
+            { id: 'contactNumber1', title: 'Contact Number 1' },
+            { id: 'contactNumber2', title: 'Contact Number 2' }
         ]
     });
 
